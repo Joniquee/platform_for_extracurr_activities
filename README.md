@@ -1,0 +1,1 @@
+# platform_for_extracurr_activities
