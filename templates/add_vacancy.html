@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}Add Vacancy{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Create New Vacancy</h2>
+    <form method="POST" action="/add_vacancy">
+        <div class="mb-3">
+            <label for="title" class="form-label">Position Title</label>
+            <input type="text" class="form-control" id="title" name="title" required>
+        </div>
+        <div class="mb-3">
+            <label for="description" class="form-label">Description</label>
+            <textarea class="form-control" id="description" name="description" rows="5" required></textarea>
+        </div>
+        <button type="submit" class="btn btn-success">Publish</button>
+    </form>
+</div>
+{% endblock %}

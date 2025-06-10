@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}{{ vacancy.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header">
+            <h2>{{ vacancy.title }}</h2>
+        </div>
+        <div class="card-body">
+            <p>{{ vacancy.description }}</p>
+            <a href="/vacancies" class="btn btn-secondary">Back to List</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
