@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}Create Vacancy for {{ organization.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card shadow">
+                <div class="card-header bg-warning text-dark">
+                    <h5><i class="fas fa-briefcase me-2"></i>Create Vacancy for {{ organization.name }}</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('create_vacancy_for_org', org_id=organization.id) }}">
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Vacancy Title</label>
+                            <input type="text" class="form-control" id="title" name="title" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="5" required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-warning">
+                            <i class="fas fa-save me-2"></i>Create Vacancy
+                        </button>
+                        <a href="{{ url_for('organization_details', org_id=organization.id) }}" class="btn btn-secondary">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

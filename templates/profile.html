@@ -1,57 +1,77 @@
-{# -*- coding: utf-8 -*- #}
 {% extends "base.html" %}
 
+{% block title %}My Profile{% endblock %}
+
 {% block content %}
-<div class="container mt-5">
+<div class="container py-4">
     <div class="row justify-content-center">
-        <div class="col-md-8">
+        <div class="col-lg-8">
             <div class="card shadow">
                 <div class="card-header bg-primary text-white">
-                    <h3 class="card-title mb-0">User Profile</h3>
+                    <h3 class="mb-0">My Account Profile</h3>
                 </div>
+
                 <div class="card-body">
-                    <div class="mb-4">
-                        <h4>Account Information</h4>
+                    <!-- Account Information Section -->
+                    <section class="mb-4">
+                        <h4 class="d-flex align-items-center">
+                            <i class="bi bi-person-circle me-2"></i>
+                            Account Details
+                        </h4>
                         <hr>
-                        <div class="row mb-3">
-                            <div class="col-md-4 fw-bold">Username:</div>
-                            <div class="col-md-8">{{ current_user.username }}</div>
-                        </div>
-                        <div class="row mb-3">
-                            <div class="col-md-4 fw-bold">Email:</div>
-                            <div class="col-md-8">{{ current_user.email }}</div>
-                        </div>
-                        <div class="row mb-3">
-                            <div class="col-md-4 fw-bold">Role:</div>
-                            <div class="col-md-8">
-                                <span class="badge bg-info">{{ current_user.role }}</span>
+
+                        <dl class="row">
+                            <dt class="col-sm-4">Username:</dt>
+                            <dd class="col-sm-8">{{ current_user.username }}</dd>
+
+                            <dt class="col-sm-4">Email:</dt>
+                            <dd class="col-sm-8">{{ current_user.email }}</dd>
+
+                            <dt class="col-sm-4">Account Type:</dt>
+                            <dd class="col-sm-8">
+                                <span class="badge bg-info text-capitalize">{{ current_user.role }}</span>
+                            </dd>
+
+                            <dt class="col-sm-4">Member Since:</dt>
+                            <dd class="col-sm-8">{{ current_user.created_at.strftime('%B %d, %Y') }}</dd>
+                        </dl>
+                    </section>
+
+                    <!-- Profile Update Section -->
+                    <section class="mb-4">
+                        <h4 class="d-flex align-items-center">
+                            <i class="bi bi-pencil-square me-2"></i>
+                            Update Profile
+                        </h4>
+                        <hr>
+
+                        <form method="POST" action="{{ url_for('update_profile') }}">
+                            <div class="mb-3">
+                                <label for="username" class="form-label">Username</label>
+                                <input type="text" class="form-control"
+                                       id="username" name="username"
+                                       value="{{ current_user.username }}" required>
                             </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-4 fw-bold">Registered:</div>
-                            <div class="col-md-8">{{ current_user.created_at.strftime('%d %B %Y') }}</div>
-                        </div>
-                    </div>
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Email Address</label>
+                                <input type="email" class="form-control"
+                                       id="email" name="email"
+                                       value="{{ current_user.email }}" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                Save Changes
+                            </button>
+                        </form>
+                    </section>
 
-                    <form method="POST" action="{{ url_for('update_profile') }}">
-                        <h4>Edit Profile</h4>
+                    <!-- Password Change Section -->
+                    <section>
+                        <h4 class="d-flex align-items-center">
+                            <i class="bi bi-shield-lock me-2"></i>
+                            Security Settings
+                        </h4>
                         <hr>
-                        <div class="mb-3">
-                            <label for="username" class="form-label">Username</label>
-                            <input type="text" class="form-control" id="username"
-                                   name="username" value="{{ current_user.username }}" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="email" class="form-label">Email</label>
-                            <input type="email" class="form-control" id="email"
-                                   name="email" value="{{ current_user.email }}" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary">Update Profile</button>
-                    </form>
 
-                    <div class="mt-5">
-                        <h4>Change Password</h4>
-                        <hr>
                         <form method="POST" action="{{ url_for('change_password') }}">
                             <div class="mb-3">
                                 <label for="current_password" class="form-label">Current Password</label>
@@ -64,13 +84,15 @@
                                        id="new_password" name="new_password" required>
                             </div>
                             <div class="mb-3">
-                                <label for="confirm_password" class="form-label">Confirm Password</label>
+                                <label for="confirm_password" class="form-label">Confirm New Password</label>
                                 <input type="password" class="form-control"
                                        id="confirm_password" name="confirm_password" required>
                             </div>
-                            <button type="submit" class="btn btn-warning">Change Password</button>
+                            <button type="submit" class="btn btn-warning">
+                                Update Password
+                            </button>
                         </form>
-                    </div>
+                    </section>
                 </div>
             </div>
         </div>

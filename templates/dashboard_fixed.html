@@ -1,1 +1,70 @@
-﻿{% extends "base.html" %}{% block title %}Dashboard{% endblock %}{% block content %}<div class="row">    <div class="col-md-4">        <div class="card">            <div class="card-header">                <h5>Profile</h5>            </div>            <div class="card-body">                <p><strong>Name:</strong> {{ current_user.username }}</p>                <p><strong>Email:</strong> {{ current_user.email }}</p>                <p><strong>Role:</strong> {{ current_user.role }}</p>            </div>        </div>    </div>    <div class="col-md-8">        <!-- Блок мероприятий -->        {% if events %}        <div class="card mb-4">            <div class="card-header">                <h5>Your Upcoming Events</h5>            </div>            <div class="card-body">                <ul class="list-group">                    {% for event in events %}                    <li class="list-group-item">                        <strong>{{ event.title }}</strong>                        <span class="float-end">{{ event.date.strftime('%b %d, %Y at %H:%M') }}</span>                    </li>                    {% endfor %}                </ul>            </div>        </div>        {% endif %}        <div class="card">            <div class="card-header">                <h5>Quick Actions</h5>            </div>            <div class="card-body">                <a href="{{ url_for('events') }}" class="btn btn-primary me-2">View All Events</a>                <a href="{{ url_for('profile') }}" class="btn btn-secondary">Edit Profile</a>            </div>        </div>    </div></div>{% endblock %}
+﻿{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">User Profile</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <p class="mb-1"><strong>Name:</strong></p>
+                        <p>{{ current_user.username }}</p>
+                    </div>
+                    <div class="mb-3">
+                        <p class="mb-1"><strong>Email:</strong></p>
+                        <p>{{ current_user.email }}</p>
+                    </div>
+                    <div>
+                        <p class="mb-1"><strong>Role:</strong></p>
+                        <p>{{ current_user.role }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <!-- Events Section -->
+            {% if events %}
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Your Upcoming Events</h5>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        {% for event in events %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <strong>{{ event.title }}</strong>
+                            <span class="badge bg-primary rounded-pill">
+                                {{ event.date.strftime('%b %d, %Y at %H:%M') }}
+                            </span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex">
+                        <a href="{{ url_for('events') }}" class="btn btn-primary me-3">
+                            <i class="bi bi-calendar-event"></i> View All Events
+                        </a>
+                        <a href="{{ url_for('profile') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-person-gear"></i> Edit Profile
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

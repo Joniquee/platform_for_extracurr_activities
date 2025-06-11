@@ -3,43 +3,17 @@
 {% block title %}Home{% endblock %}
 
 {% block content %}
-<div class="container py-5">
-    <div class="text-center mb-5">
-        <h1 class="display-3 fw-bold">Добро пожаловать!</h1>
-        <p class="lead text-muted">Платформа внеучебной активности студентов НИУ ВШЭ</p>
-        <hr class="w-25 mx-auto my-4">
-        <p class="fs-5">Ищите студенческие организации, мероприятия и вакансии в одном месте.</p>
-    </div>
-
-    <div class="row justify-content-center">
-        <div class="col-md-4 mb-4">
-            <div class="card shadow-sm h-100 text-center border-0">
-                <div class="card-body">
-                    <h5 class="card-title">Организации</h5>
-                    <p class="card-text">Откройте для себя студенческие клубы и объединения, присоединяйтесь к активной студенческой жизни.</p>
-                    <a href="/organizations" class="btn btn-primary btn-lg mt-2">Перейти</a>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-4 mb-4">
-            <div class="card shadow-sm h-100 text-center border-0">
-                <div class="card-body">
-                    <h5 class="card-title">Мероприятия</h5>
-                    <p class="card-text">Узнавайте о предстоящих событиях, участвуйте в конкурсах, встречах и воркшопах.</p>
-                    <a href="/events" class="btn btn-success btn-lg mt-2">Перейти</a>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-4 mb-4">
-            <div class="card shadow-sm h-100 text-center border-0">
-                <div class="card-body">
-                    <h5 class="card-title">Вакансии</h5>
-                    <p class="card-text">Найдите стажировки, подработки и волонтёрские возможности от партнёров университета.</p>
-                    <a href="/vacancies" class="btn btn-info btn-lg mt-2 text-white">Перейти</a>
-                </div>
-            </div>
+<div class="jumbotron">
+    <div class="text-center">
+        <h1 class="display-4">Welcome to HSE Platform</h1>
+        <p class="lead">Student Activities Management System</p>
+        <hr class="my-4 mx-auto" style="width: 50%">
+        <p>Discover student organizations and upcoming events</p>
+        
+        <div class="d-flex flex-wrap justify-content-center gap-2">
+            <a class="btn btn-primary btn-lg" href="/organizations" role="button">Organizations</a>
+            <a class="btn btn-success btn-lg" href="/events" role="button">Events</a>
+            <a class="btn btn-info btn-lg" href="/vacancies" role="button">Opportunities</a>
         </div>
     </div>
 </div>

@@ -1,1 +1,42 @@
-{% extends "base.html" %}{% block title %}Admin Panel{% endblock %}{% block content %}<div class="row">    <div class="col">        <h2>Administrative Panel</h2>        <div class="card mt-4">            <div class="card-header">                <h5>Users</h5>            </div>            <div class="card-body">                <table class="table">                    <thead>                        <tr>                            <th>ID</th>                            <th>Name</th>                            <th>Email</th>                            <th>Role</th>                            <th>Actions</th>                        </tr>                    </thead>                    <tbody>                        {% for user in users %}                        <tr>                            <td>{{ user.id }}</td>                            <td>{{ user.username }}</td>                            <td>{{ user.email }}</td>                            <td>{{ user.role }}</td>                            <td>                                <a href="/admin/edit_user/{{ user.id }}" class="btn btn-sm btn-warning">Edit</a>                            </td>                        </tr>                        {% endfor %}                    </tbody>                </table>            </div>        </div>    </div></div>{% endblock %}
+{% extends "base.html" %}
+
+{% block title %}Admin Panel{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col">
+        <h2>Administrative Panel</h2>
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5>Users</h5>
+            </div>
+            <div class="card-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td>{{ user.id }}</td>
+                            <td>{{ user.username }}</td>
+                            <td>{{ user.email }}</td>
+                            <td>{{ user.role }}</td>
+                            <td>
+                                <a href="/admin/edit_user/{{ user.id }}" class="btn btn-sm btn-warning">Edit</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

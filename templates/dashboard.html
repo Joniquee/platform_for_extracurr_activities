@@ -3,118 +3,128 @@
 {% block title %}Dashboard{% endblock %}
 
 {% block content %}
-<style>
-    .dashboard-header {
-        background: linear-gradient(to right, #0d6efd, #0dcaf0);
-        color: white;
-        border-radius: 1rem;
-        padding: 2rem;
-    }
-    .dashboard-section {
-        padding: 2rem 1rem;
-        border-bottom: 1px solid #eaeaea;
-    }
-    .dashboard-icon {
-        font-size: 4rem;
-    }
-    .dashboard-badge {
-        font-size: 0.9rem;
-        padding: 0.5rem 1rem;
-        border-radius: 20px;
-    }
-    .event-card:hover {
-        background-color: #f8f9fa;
-        transition: background-color 0.3s ease;
-    }
-</style>
+<div class="container mt-4">
+    <div class="row">
+        <!-- Profile block -->
+        <div class="col-md-4">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5><i class="fas fa-user-circle me-2"></i>Your Profile</h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <i class="fas fa-user-tie fa-4x
+                            {% if current_user.role == 'root_admin' %}text-danger
+                            {% elif current_user.role == 'admin' %}text-warning
+                            {% else %}text-primary{% endif %}"></i>
+                    </div>
 
-<div class="container my-5">
-    <!-- Header -->
-    <div class="dashboard-header mb-5">
-        <div class="d-flex flex-column flex-md-row align-items-center justify-content-between">
-            <div>
-                <h1 class="mb-2">Привет, {{ current_user.username }}!</h1>
-                <p class="lead mb-0">Добро пожаловать в личный кабинет. Здесь вы можете управлять своими действиями и следить за активностью.</p>
-            </div>
-            <div class="text-center text-md-end mt-4 mt-md-0">
-                <i class="fas fa-user-tie dashboard-icon 
-                    {% if current_user.role == 'root_admin' %}text-danger
-                    {% elif current_user.role == 'admin' %}text-warning
-                    {% else %}text-white{% endif %}">
-                </i>
-                <div class="mt-2">
-                    {% if current_user.role == 'root_admin' %}
-                        <span class="dashboard-badge bg-danger text-white">
-                            <i class="fas fa-crown me-1"></i> Root Admin
-                        </span>
-                    {% elif current_user.role == 'admin' %}
-                        <span class="dashboard-badge bg-warning text-dark">
-                            <i class="fas fa-user-shield me-1"></i> Admin
-                        </span>
-                    {% else %}
-                        <span class="dashboard-badge bg-light text-dark">
-                            <i class="fas fa-user me-1"></i> User
-                        </span>
+                    <div class="mb-3">
+                        <h6 class="text-muted">Username</h6>
+                        <p class="fs-5">{{ current_user.username }}</p>
+                    </div>
+
+                    <div class="mb-3">
+                        <h6 class="text-muted">Email</h6>
+                        <p class="fs-5">{{ current_user.email }}</p>
+                    </div>
+
+                    <div class="mb-3">
+                        <h6 class="text-muted">Role</h6>
+                        <p>
+                            {% if current_user.role == 'root_admin' %}
+                            <span class="badge bg-danger p-2">
+                                <i class="fas fa-crown me-1"></i> Root Administrator
+                            </span>
+                            {% elif current_user.role == 'admin' %}
+                            <span class="badge bg-warning text-dark p-2">
+                                <i class="fas fa-user-shield me-1"></i> Administrator
+                            </span>
+                            {% else %}
+                            <span class="badge bg-primary p-2">
+                                <i class="fas fa-user me-1"></i> Regular User
+                            </span>
+                            {% endif %}
+                        </p>
+                    </div>
+
+                    {% if current_user.role in ['root_admin', 'admin'] %}
+                    <div class="d-grid gap-2 mt-4">
+                        <a href="{{ url_for('admin_users') }}" class="btn btn-warning">
+                            <i class="fas fa-users-cog me-2"></i>Manage Users
+                        </a>
+                        <a href="{{ url_for('create_admin') }}" class="btn btn-success">
+                            <i class="fas fa-user-plus me-2"></i>Create Admin
+                        </a>
+                    </div>
                     {% endif %}
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Основная информация -->
-    <div class="dashboard-section">
-        <div class="row g-4">
-            <div class="col-md-6">
-                <h5 class="text-muted">Email</h5>
-                <p class="fs-5">{{ current_user.email }}</p>
-            </div>
-            <div class="col-md-6">
-                <h5 class="text-muted">Имя пользователя</h5>
-                <p class="fs-5">{{ current_user.username }}</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- События -->
-    <div class="dashboard-section">
-        <h4 class="mb-4"><i class="fas fa-calendar-alt me-2 text-info"></i>Предстоящие события</h4>
-        {% if events %}
-        <div class="row g-3">
-            {% for event in events %}
-            <div class="col-md-6">
-                <div class="p-3 border rounded event-card h-100">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h6 class="mb-0">{{ event.title }}</h6>
-                        <small class="text-muted">{{ event.date.strftime('%d %b %Y') }}</small>
+        <!-- Main content -->
+        <div class="col-md-8">
+            <!-- Upcoming Events block -->
+            <div class="card shadow mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5><i class="fas fa-calendar-alt me-2"></i>Upcoming Events</h5>
+                </div>
+                <div class="card-body">
+                    {% if events %}
+                    <div class="list-group">
+                        {% for event in events %}
+                        <div class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">{{ event.title }}</h6>
+                                <small>{{ event.date.strftime('%b %d, %Y') }}</small>
+                            </div>
+                            <p class="mb-1 text-muted">{{ event.description|truncate(100) }}</p>
+                        </div>
+                        {% endfor %}
                     </div>
-                    <p class="mb-0 text-muted">{{ event.description|truncate(100) }}</p>
+                    {% else %}
+                    <div class="alert alert-info">No upcoming events</div>
+                    {% endif %}
                 </div>
             </div>
-            {% endfor %}
-        </div>
-        {% else %}
-        <div class="alert alert-light">Нет запланированных событий.</div>
-        {% endif %}
-    </div>
 
-    <!-- Быстрые действия -->
-    <div class="dashboard-section">
-        <h4 class="mb-4"><i class="fas fa-bolt me-2 text-secondary"></i>Быстрые действия</h4>
-        <div class="d-flex flex-wrap gap-3">
-            <a href="{{ url_for('events') }}" class="btn btn-primary">
-                <i class="fas fa-calendar me-2"></i> Все события
-            </a>
-            <a href="{{ url_for('profile') }}" class="btn btn-outline-primary">
-                <i class="fas fa-user-edit me-2"></i> Профиль
-            </a>
-            {% if current_user.role in ['root_admin', 'admin'] %}
-            <a href="{{ url_for('organizations') }}" class="btn btn-outline-success">
-                <i class="fas fa-building me-2"></i> Организации
-            </a>
-            <a href="{{ url_for('admin_users') }}" class="btn btn-outline-warning">
-                <i class="fas fa-users-cog me-2"></i> Пользователи
-            </a>
-            {% endif %}
+            <!-- Quick Actions -->
+            <div class="card shadow">
+                <div class="card-header bg-secondary text-white">
+                    <h5><i class="fas fa-bolt me-2"></i>Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="{{ url_for('events') }}" class="btn btn-primary">
+                            <i class="fas fa-calendar me-2"></i>View Events
+                        </a>
+                        <a href="{{ url_for('profile') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-user-edit me-2"></i>Edit Profile
+                        </a>
+                        {% if current_user.led_organizations %}
+                        <a href="{{ url_for('my_organizations') }}" class="btn btn-outline-success">
+                            <i class="fas fa-building me-2"></i>My Organizations
+                        </a>
+                        {% endif %}
+                        {% if current_user.role in ['root_admin', 'admin'] %}
+                        <a href="{{ url_for('organizations') }}" class="btn btn-outline-success">
+                            <i class="fas fa-building me-2"></i>Manage Organizations
+                        </a>
+                        <!-- New admin buttons -->
+                        <div class="dropdown">
+                            <button class="btn btn-success dropdown-toggle" type="button" id="adminActionsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-plus-circle me-2"></i>Create New
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="adminActionsDropdown">
+                                <li><a class="dropdown-item" href="{{ url_for('create_organization') }}"><i class="fas fa-building me-2"></i>Organization</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('create_event') }}"><i class="fas fa-calendar-plus me-2"></i>Event</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('create_vacancy') }}"><i class="fas fa-briefcase me-2"></i>Vacancy</a></li>
+                            </ul>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
