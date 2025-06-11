@@ -10,7 +10,7 @@ from flask_login import (
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 from config import Config
-from models import db, User, Organization, Event, Vacancy
+from models import db, User, Organization, Event, Vacancy, Application
 
 
 def create_app():
@@ -69,6 +69,175 @@ def register_routes(app):
     def vacancies():
         vacancies_list = Vacancy.query.order_by(Vacancy.created_at.desc()).all()
         return render_template('vacancies.html', vacancies=vacancies_list)
+
+    #vacancies logic
+    @app.route('/vacancy/<int:vacancy_id>')
+    def vacancy_details(vacancy_id):
+        vacancy = Vacancy.query.get_or_404(vacancy_id)
+        organization = Organization.query.get(vacancy.organization_id) if vacancy.organization_id else None
+        return render_template('vacancy_details.html', 
+                             vacancy=vacancy,
+                             organization=organization)
+    @app.route('/vacancy/<int:vacancy_id>/edit', methods=['GET', 'POST'])
+    @login_required
+    def edit_vacancy(vacancy_id):
+        vacancy = Vacancy.query.get_or_404(vacancy_id)
+        organization = Organization.query.get(vacancy.organization_id) if vacancy.organization_id else None
+    
+        # Проверка прав
+        if current_user.role not in ['admin', 'root_admin']:
+            if not organization or current_user.id != organization.leader_id:
+                flash('Access denied', 'error')
+                return redirect(url_for('vacancy_details', vacancy_id=vacancy.id))
+
+        if request.method == 'POST':
+            vacancy.title = request.form.get('title')
+            vacancy.description = request.form.get('description')
+            vacancy.requirements = request.form.get('requirements')
+            db.session.commit()
+            flash('Vacancy updated successfully!', 'success')
+            return redirect(url_for('vacancy_details', vacancy_id=vacancy.id))
+    
+        organizations = Organization.query.all()
+        return render_template('edit_vacancy.html', 
+                             vacancy=vacancy,
+                             organizations=organizations)
+
+    @app.route('/vacancy/<int:vacancy_id>/delete', methods=['POST'])
+    @login_required
+    def delete_vacancy(vacancy_id):
+        vacancy = Vacancy.query.get_or_404(vacancy_id)
+        organization = Organization.query.get(vacancy.organization_id) if vacancy.organization_id else None
+    
+        # Проверка прав
+        if current_user.role not in ['admin', 'root_admin']:
+            if not organization or current_user.id != organization.leader_id:
+                flash('Access denied', 'error')
+                return redirect(url_for('vacancy_details', vacancy_id=vacancy.id))
+
+        db.session.delete(vacancy)
+        db.session.commit()
+        flash('Vacancy has been deleted', 'success')
+        return redirect(url_for('vacancies'))
+
+    @app.route('/vacancy/<int:vacancy_id>/apply', methods=['GET', 'POST'])
+    @login_required
+    def apply_for_vacancy(vacancy_id):
+        vacancy = Vacancy.query.get_or_404(vacancy_id)
+    
+        # Проверяем, не подавал ли пользователь уже заявку
+        existing_application = Application.query.filter_by(
+            user_id=current_user.id,
+            vacancy_id=vacancy.id
+        ).first()
+    
+        if existing_application:
+            flash('You have already applied for this vacancy', 'warning')
+            return redirect(url_for('vacancy_details', vacancy_id=vacancy.id))
+    
+        if request.method == 'POST':
+            # Создаем новую заявку
+            application = Application(
+                user_id=current_user.id,
+                vacancy_id=vacancy.id,
+                full_name=request.form['full_name'],
+                email=request.form['email'],
+                phone=request.form['phone'],
+                telegram=request.form['telegram'],
+                course=request.form['course'],
+                study_group=request.form['study_group'],
+                status='pending'
+            )
+        
+            db.session.add(application)
+            db.session.commit()
+        
+            flash('Your application has been submitted successfully!', 'success')
+            return redirect(url_for('vacancy_details', vacancy_id=vacancy.id))
+    
+        return render_template('apply_for_vacancy.html', vacancy=vacancy)
+
+    #organisations logic
+    @app.route('/organization/<int:org_id>')
+    def organization_public_details(org_id):
+        org = Organization.query.get_or_404(org_id)
+        events = Event.query.filter_by(organization_id=org_id).order_by(Event.date).all()
+        vacancies = Vacancy.query.filter_by(organization_id=org_id).order_by(Vacancy.created_at.desc()).all()
+        return render_template('organization_public_details.html', 
+                             organization=org,
+                             events=events,
+                             vacancies=vacancies)
+
+    #event logic
+    @app.route('/event/<int:event_id>')
+    def event_details(event_id):
+        event = Event.query.get_or_404(event_id)
+        organization = Organization.query.get(event.organization_id)
+        return render_template('event_details.html', event=event, organization=organization)
+
+    @app.route('/event/<int:event_id>/register', methods=['GET', 'POST'])
+    @login_required
+    def register_for_event(event_id):
+        event = Event.query.get_or_404(event_id)
+    
+        if request.method == 'POST':
+            # Логика регистрации пользователя на событие
+            # Например: добавление записи в таблицу участников
+            flash('You have successfully registered for this event!', 'success')
+            return redirect(url_for('event_details', event_id=event.id))
+    
+        return render_template('register_for_event.html', event=event)  # Исправлено: event вместо events
+
+    @app.route('/event/<int:event_id>/edit', methods=['GET', 'POST'])
+    @login_required
+    def edit_event(event_id):
+        event = Event.query.get_or_404(event_id)
+        organization = Organization.query.get(event.organization_id)
+    
+        # Проверка прав (только админы или лидер организации)
+        if current_user.role not in ['root_admin', 'admin'] and current_user.id != organization.leader_id:
+            flash('Access denied', 'error')
+            return redirect(url_for('event_details', event_id=event.id))
+
+        if request.method == 'POST':
+            event.title = request.form.get('title')
+            date_str = request.form.get('date')
+            event.description = request.form.get('description')
+            event.organization_id = request.form.get('organization_id')
+        
+            try:
+                event.date = datetime.strptime(date_str, '%Y-%m-%dT%H:%M')
+            except ValueError:
+                flash('Invalid date format', 'error')
+                return redirect(url_for('edit_event', event_id=event.id))
+        
+            db.session.commit()
+            flash('Event updated successfully!', 'success')
+            return redirect(url_for('event_details', event_id=event.id))
+    
+        organizations = Organization.query.all()
+        return render_template('edit_event.html', 
+                             event=event,
+                             organizations=organizations)
+
+    @app.route('/event/<int:event_id>/delete', methods=['POST'])
+    @login_required
+    def delete_event(event_id):
+        event = Event.query.get_or_404(event_id)
+        organization = Organization.query.get(event.organization_id) if event.organization_id else None
+    
+        # Проверка прав (только админы или лидер организации)
+        if current_user.role not in ['root_admin', 'admin']:
+            if not organization or current_user.id != organization.leader_id:
+                flash('Access denied', 'error')
+                return redirect(url_for('event_details', event_id=event.id))
+
+        db.session.delete(event)
+        db.session.commit()
+        flash('Event has been deleted', 'success')
+        return redirect(url_for('events'))
+
+
 
     # Auth routes
     @app.route('/register', methods=['GET', 'POST'])

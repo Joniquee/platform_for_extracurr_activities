@@ -68,3 +68,23 @@ class Vacancy(db.Model):
     
     def __repr__(self):
         return f'<Vacancy {self.title}>'
+
+class Application(db.Model):
+    __tablename__ = 'applications'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    vacancy_id = db.Column(db.Integer, db.ForeignKey('vacancies.id'))
+    full_name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(100), nullable=False)
+    phone = db.Column(db.String(20), nullable=False)
+    telegram = db.Column(db.String(50))
+    course = db.Column(db.Integer, nullable=False)
+    study_group = db.Column(db.String(20), nullable=False)
+    status = db.Column(db.String(20), default='pending')  # pending, reviewed, rejected, accepted
+    applied_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    user = db.relationship('User', backref='applications')
+    vacancy = db.relationship('Vacancy', backref='applications')
+    
+    def __repr__(self):
+        return f'<Application #{self.id} for {self.vacancy.title}>'
