@@ -1,23 +1,42 @@
 body {
-    padding-top: 56px;
+    font-family: 'PT Sans', sans-serif;
+    background-color: #fff;
+    color: #333;
 }
 
-.jumbotron {
-    padding: 2rem 1rem;
-    margin-bottom: 2rem;
-    background-color: #e9ecef;
-    border-radius: .3rem;
+a {
+    color: #003366;
+    text-decoration: none;
+}
+
+a:hover {
+    color: #002244;
+}
+
+.btn-primary {
+    background-color: #003366;
+    border-color: #003366;
+}
+
+.btn-primary:hover {
+    background-color: #002244;
+    border-color: #002244;
 }
 
 .card {
-    transition: transform .2s;
+    border: none;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
-    .card:hover {
-        transform: scale(1.02);
-    }
-
-#calendar {
-    max-width: 900px;
-    margin: 0 auto;
+.fc-event {
+    background-color: #003366;
+    border-color: #003366;
+    color: #fff;
 }
+
+.fc-event:hover {
+    background-color: #002244;
+}
+
+
+
