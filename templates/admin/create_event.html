@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Create Event{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card shadow">
+                <div class="card-header bg-info text-white">
+                    <h5><i class="fas fa-calendar-plus me-2"></i>Create New Event</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('create_event') }}">
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Event Title</label>
+                            <input type="text" class="form-control" id="title" name="title" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="date" class="form-label">Date and Time</label>
+                            <input type="datetime-local" class="form-control" id="date" name="date" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="organization_id" class="form-label">Organization</label>
+                            <select class="form-select" id="organization_id" name="organization_id" required>
+                                <option value="">Select Organization</option>
+                                {% for org in organizations %}
+                                <option value="{{ org.id }}">{{ org.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-info text-white">
+                            <i class="fas fa-save me-2"></i>Create Event
+                        </button>
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Create Organization{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h5><i class="fas fa-building me-2"></i>Create New Organization</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('create_organization') }}">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Organization Name</label>
+                            <input type="text" class="form-control" id="name" name="name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="leader_id" class="form-label">Leader</label>
+                            <select class="form-select" id="leader_id" name="leader_id" required>
+                                <option value="">Select Leader</option>
+                                {% for user in users %}
+                                <option value="{{ user.id }}">{{ user.username }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save me-2"></i>Create Organization
+                        </button>
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
