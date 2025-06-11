@@ -1,10 +1,17 @@
 # -*- coding: utf-8 -*-
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import UserMixin
 from datetime import datetime
+from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 
+# Инициализация db здесь, чтобы избежать циклических импортов
 db = SQLAlchemy()
+
+# Association table for many-to-many relationship between users and organizations
+organization_members = db.Table('organization_members',
+    db.Column('user_id', db.Integer, db.ForeignKey('users.id'), primary_key=True),
+    db.Column('organization_id', db.Integer, db.ForeignKey('organizations.id'), primary_key=True)
+)
 
 class User(db.Model, UserMixin):
     __tablename__ = 'users'
@@ -13,7 +20,7 @@ class User(db.Model, UserMixin):
     email = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
     role = db.Column(db.String(20), default='user')
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)  # ��������� ����� ����
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     def set_password(self, password):
         self.password = generate_password_hash(password, method='pbkdf2:sha256')
@@ -30,8 +37,11 @@ class Organization(db.Model):
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
     leader_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    leader = db.relationship('User', backref='led_organizations')
     events = db.relationship('Event', backref='organization', lazy=True)
     vacancies = db.relationship('Vacancy', backref='organization', lazy=True)
+    members = db.relationship('User', secondary=organization_members, 
+                             backref=db.backref('organizations', lazy=True))
     
     def __repr__(self):
         return f'<Organization {self.name}>'

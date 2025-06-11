@@ -1,26 +1,23 @@
-# init_db.py
-from app import app, db
-from models import User, Organization, Event, Vacancy
+# -*- coding: utf-8 -*-
+from app import create_app
+from models import db, User, Organization, Event, Vacancy
 from datetime import datetime
 from werkzeug.security import generate_password_hash
 
-# -*- coding: utf-8 -*-
 def initialize_database():
+    app = create_app()
     with app.app_context():
-        # Create all database tables
         db.create_all()
         
-        # Add initial admin user if none exists
         if not User.query.first():
             admin = User(
                 username='admin',
                 email='admin@example.com',
-                password=generate_password_hash('securepassword123'),  # Always hash passwords
+                password=generate_password_hash('securepassword123'),
                 role='admin'
             )
             db.session.add(admin)
             
-            # Add sample data (optional)
             org = Organization(
                 name='Sample Organization',
                 description='Example organization for demonstration'

@@ -8,6 +8,7 @@ from flask_login import (
     login_required
 )
 from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import datetime
 from config import Config
 from models import db, User, Organization, Event, Vacancy
 
@@ -31,7 +32,7 @@ def create_app():
     with app.app_context():
         db.create_all()
 
-        # Создаём root admin если его нет
+        # Create root admin if doesn't exist
         if not User.query.filter_by(role='root_admin').first():
             root_admin = User(
                 username='root_admin',
@@ -47,9 +48,9 @@ def create_app():
 
 
 def register_routes(app):
-    """Регистрация всех маршрутов"""
+    """Register all routes"""
 
-    # Открытые маршруты (без авторизации)
+    # Public routes (no auth required)
     @app.route('/')
     def index():
         return render_template('index.html')
@@ -69,7 +70,7 @@ def register_routes(app):
         vacancies_list = Vacancy.query.order_by(Vacancy.created_at.desc()).all()
         return render_template('vacancies.html', vacancies=vacancies_list)
 
-    # Авторизация/регистрация
+    # Auth routes
     @app.route('/register', methods=['GET', 'POST'])
     def register():
         if current_user.is_authenticated:
@@ -110,7 +111,7 @@ def register_routes(app):
             user = User.query.filter_by(email=email).first()
 
             if user and check_password_hash(user.password, password):
-                login_user(user, remember=True)  # Добавлен remember=True
+                login_user(user, remember=True)
                 next_page = request.args.get('next')
                 return redirect(next_page or url_for('dashboard'))
             else:
@@ -123,7 +124,7 @@ def register_routes(app):
         logout_user()
         return redirect(url_for('index'))
 
-    # Защищённые маршруты (требуют авторизации)
+    # Protected routes (require auth)
     @app.route('/dashboard')
     @login_required
     def dashboard():
@@ -138,18 +139,15 @@ def register_routes(app):
     @app.route('/update_profile', methods=['POST'])
     @login_required
     def update_profile():
-        # Получаем данные из формы
         username = request.form.get('username')
         email = request.form.get('email')
 
-        # Проверяем уникальность email
         if email != current_user.email:
             existing_user = User.query.filter_by(email=email).first()
             if existing_user:
                 flash('Email already registered by another user', 'error')
                 return redirect(url_for('profile'))
 
-        # Обновляем данные пользователя
         current_user.username = username
         current_user.email = email
         db.session.commit()
@@ -160,34 +158,141 @@ def register_routes(app):
     @app.route('/change_password', methods=['POST'])
     @login_required
     def change_password():
-        # Получаем данные из формы
         current_password = request.form.get('current_password')
         new_password = request.form.get('new_password')
         confirm_password = request.form.get('confirm_password')
 
-        # Проверяем текущий пароль
         if not check_password_hash(current_user.password, current_password):
             flash('Current password is incorrect', 'error')
             return redirect(url_for('profile'))
 
-        # Проверяем совпадение новых паролей
         if new_password != confirm_password:
             flash('New passwords do not match', 'error')
             return redirect(url_for('profile'))
 
-        # Обновляем пароль
         current_user.password = generate_password_hash(new_password)
         db.session.commit()
 
         flash('Password changed successfully!', 'success')
         return redirect(url_for('profile'))
 
-    # +++ НОВЫЕ МАРШРУТЫ ДЛЯ УПРАВЛЕНИЯ АДМИНИСТРАТОРАМИ +++
-    # +++ НОВЫЕ МАРШРУТЫ ДЛЯ УПРАВЛЕНИЯ АДМИНИСТРАТОРАМИ +++
+    # Organization leader routes
+    @app.route('/my_organizations')
+    @login_required
+    def my_organizations():
+        orgs = Organization.query.filter_by(leader_id=current_user.id).all()
+        return render_template('my_organizations.html', organizations=orgs)
+
+    @app.route('/my_organizations/<int:org_id>')
+    @login_required
+    def organization_details(org_id):
+        org = Organization.query.get_or_404(org_id)
+        
+        if org.leader_id != current_user.id and current_user.role not in ['root_admin', 'admin']:
+            flash('Access denied', 'error')
+            return redirect(url_for('dashboard'))
+        
+        events = Event.query.filter_by(organization_id=org_id).order_by(Event.date).all()
+        vacancies = Vacancy.query.filter_by(organization_id=org_id).order_by(Vacancy.created_at.desc()).all()
+        members = org.members
+        
+        return render_template('organization_details.html', 
+                           organization=org,
+                           events=events,
+                           vacancies=vacancies,
+                           members=members)
+
+    @app.route('/create_event_for_org/<int:org_id>', methods=['GET', 'POST'])
+    @login_required
+    def create_event_for_org(org_id):
+        org = Organization.query.get_or_404(org_id)
+    
+        if org.leader_id != current_user.id and current_user.role not in ['root_admin', 'admin']:
+            flash('Access denied', 'error')
+            return redirect(url_for('dashboard'))
+
+        if request.method == 'POST':
+            title = request.form.get('title')
+            date_str = request.form.get('date')  # Будет в формате "YYYY-MM-DDTHH:MM"
+            description = request.form.get('description')
+        
+            try:
+                # Преобразуем из формата HTML5 datetime-local в Python datetime
+                date = datetime.strptime(date_str, '%Y-%m-%dT%H:%M')
+            except ValueError:
+                flash('Invalid date format. Please use the calendar picker or format YYYY-MM-DDTHH:MM', 'error')
+                return redirect(url_for('create_event_for_org', org_id=org_id))
+        
+            new_event = Event(
+                title=title,
+                date=date,
+                description=description,
+                organization_id=org_id
+            )
+        
+            db.session.add(new_event)
+            db.session.commit()
+        
+            flash('Event created successfully!', 'success')
+            return redirect(url_for('organization_details', org_id=org_id))
+        
+        return render_template('create_event_for_org.html', organization=org)
+
+    @app.route('/create_vacancy_for_org/<int:org_id>', methods=['GET', 'POST'])
+    @login_required
+    def create_vacancy_for_org(org_id):
+        org = Organization.query.get_or_404(org_id)
+        
+        if org.leader_id != current_user.id and current_user.role not in ['root_admin', 'admin']:
+            flash('Access denied', 'error')
+            return redirect(url_for('dashboard'))
+
+        if request.method == 'POST':
+            title = request.form.get('title')
+            description = request.form.get('description')
+            
+            new_vacancy = Vacancy(
+                title=title,
+                description=description,
+                organization_id=org_id
+            )
+            
+            db.session.add(new_vacancy)
+            db.session.commit()
+            
+            flash('Vacancy created successfully!', 'success')
+            return redirect(url_for('organization_details', org_id=org_id))
+            
+        return render_template('create_vacancy_for_org.html', organization=org)
+
+    @app.route('/update_organization/<int:org_id>', methods=['POST'])
+    @login_required
+    def update_organization(org_id):
+        org = Organization.query.get_or_404(org_id)
+        
+        if org.leader_id != current_user.id and current_user.role not in ['root_admin', 'admin']:
+            flash('Access denied', 'error')
+            return redirect(url_for('dashboard'))
+        
+        description = request.form.get('description')
+        org.description = description
+        db.session.commit()
+        
+        flash('Organization updated successfully!', 'success')
+        return redirect(url_for('organization_details', org_id=org_id))
+
+    # Admin routes
+    @app.route('/admin')
+    @login_required
+    def admin_panel():
+        if current_user.role not in ['root_admin', 'admin']:
+            flash('Access denied', 'error')
+            return redirect(url_for('dashboard'))
+        return render_template('admin_panel.html')
+
     @app.route('/admin/users')
     @login_required
     def admin_users():
-        # Разрешаем доступ только root_admin и admin
         if current_user.role not in ['root_admin', 'admin']:
             flash('Access denied', 'error')
             return redirect(url_for('dashboard'))
@@ -198,7 +303,6 @@ def register_routes(app):
     @app.route('/admin/create_admin', methods=['GET', 'POST'])
     @login_required
     def create_admin():
-        # Разрешаем доступ только root_admin и admin
         if current_user.role not in ['root_admin', 'admin']:
             flash('Access denied', 'error')
             return redirect(url_for('dashboard'))
@@ -216,7 +320,7 @@ def register_routes(app):
                 username=username,
                 email=email,
                 password=generate_password_hash(password, method='pbkdf2:sha256'),
-                role='admin'  # Все новые админы создаются как обычные админы
+                role='admin'
             )
 
             db.session.add(new_admin)
@@ -227,10 +331,99 @@ def register_routes(app):
 
         return render_template('admin/create_admin.html')
 
+    @app.route('/admin/create_organization', methods=['GET', 'POST'])
+    @login_required
+    def create_organization():
+        if current_user.role not in ['root_admin', 'admin']:
+            flash('Access denied', 'error')
+            return redirect(url_for('dashboard'))
+
+        if request.method == 'POST':
+            name = request.form.get('name')
+            description = request.form.get('description')
+            leader_id = request.form.get('leader_id')
+            
+            new_org = Organization(
+                name=name,
+                description=description,
+                leader_id=leader_id
+            )
+            
+            db.session.add(new_org)
+            db.session.commit()
+            
+            flash('Organization created successfully!', 'success')
+            return redirect(url_for('organizations'))
+            
+        users = User.query.all()
+        return render_template('admin/create_organization.html', users=users)
+
+    @app.route('/admin/create_event', methods=['GET', 'POST'])
+    @login_required
+    def create_event():
+        if current_user.role not in ['root_admin', 'admin']:
+            flash('Access denied', 'error')
+            return redirect(url_for('dashboard'))
+
+        if request.method == 'POST':
+            title = request.form.get('title')
+            date_str = request.form.get('date')  # Формат: "YYYY-MM-DDTHH:MM"
+            description = request.form.get('description')
+            organization_id = request.form.get('organization_id')
+        
+            try:
+                # Конвертируем из HTML5 datetime-local в Python datetime
+                date = datetime.strptime(date_str, '%Y-%m-%dT%H:%M')
+            except ValueError:
+                flash('Invalid date format. Please use the calendar picker or enter in YYYY-MM-DDTHH:MM format (e.g. 2023-12-31T14:30)', 'error')
+                return redirect(url_for('create_event'))
+        
+            new_event = Event(
+                title=title,
+                date=date,
+                description=description,
+                organization_id=organization_id
+            )
+        
+            db.session.add(new_event)
+            db.session.commit()
+        
+            flash('Event created successfully!', 'success')
+            return redirect(url_for('events'))
+        
+        organizations = Organization.query.all()
+        return render_template('admin/create_event.html', organizations=organizations)
+
+    @app.route('/admin/create_vacancy', methods=['GET', 'POST'])
+    @login_required
+    def create_vacancy():
+        if current_user.role not in ['root_admin', 'admin']:
+            flash('Access denied', 'error')
+            return redirect(url_for('dashboard'))
+
+        if request.method == 'POST':
+            title = request.form.get('title')
+            description = request.form.get('description')
+            organization_id = request.form.get('organization_id')
+            
+            new_vacancy = Vacancy(
+                title=title,
+                description=description,
+                organization_id=organization_id
+            )
+            
+            db.session.add(new_vacancy)
+            db.session.commit()
+            
+            flash('Vacancy created successfully!', 'success')
+            return redirect(url_for('vacancies'))
+            
+        organizations = Organization.query.all()
+        return render_template('admin/create_vacancy.html', organizations=organizations)
+
     @app.route('/admin/promote_to_admin/<int:user_id>')
     @login_required
     def promote_to_admin(user_id):
-        # Проверяем права доступа
         if current_user.role not in ['admin', 'root_admin']:
             flash('Access denied', 'error')
             return redirect(url_for('dashboard'))
@@ -250,8 +443,7 @@ def register_routes(app):
     @app.route('/admin/demote_admin/<int:user_id>')
     @login_required
     def demote_admin(user_id):
-        # Проверяем права доступа
-        if current_user.role != 'root_admin':  # Только root_admin может понижать админов
+        if current_user.role != 'root_admin':
             flash('Access denied. Only root admin can demote administrators.', 'error')
             return redirect(url_for('dashboard'))
 
