@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}Apply for {{ vacancy.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow">
+        <div class="card-header bg-success text-white">
+            <h3><i class="fas fa-paper-plane"></i> Apply for: {{ vacancy.title }}</h3>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> You are applying to:
+                <strong>{{ vacancy.organization.name }}</strong>
+            </div>
+
+            <form method="POST">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="full_name" class="form-label">Full Name</label>
+                        <input type="text" class="form-control" id="full_name" name="full_name"
+                               value="{{ current_user.username if current_user.is_authenticated else '' }}" required>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email"
+                               value="{{ current_user.email if current_user.is_authenticated else '' }}" required>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="phone" class="form-label">Phone Number</label>
+                        <input type="tel" class="form-control" id="phone" name="phone" required>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="telegram" class="form-label">Telegram</label>
+                        <div class="input-group">
+                            <span class="input-group-text">@</span>
+                            <input type="text" class="form-control" id="telegram" name="telegram">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="course" class="form-label">Course</label>
+                        <select class="form-select" id="course" name="course" required>
+                            <option value="" selected disabled>Select your course</option>
+                            <option value="1">1st Course</option>
+                            <option value="2">2nd Course</option>
+                            <option value="3">3rd Course</option>
+                            <option value="4">4th Course</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="study_group" class="form-label">Study Group</label>
+                        <input type="text" class="form-control" id="study_group" name="study_group"
+                               placeholder="e.g. B19-05" required>
+                    </div>
+                </div>
+
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                    <a href="{{ url_for('vacancy_details', vacancy_id=vacancy.id) }}" class="btn btn-secondary me-md-2">
+                        <i class="fas fa-times"></i> Cancel
+                    </a>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-paper-plane"></i> Submit Application
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

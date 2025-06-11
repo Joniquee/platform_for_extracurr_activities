@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Event - {{ event.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow">
+        <div class="card-header bg-warning text-dark">
+            <h3>Edit Event: {{ event.title }}</h3>
+        </div>
+        <div class="card-body">
+            <form method="POST">
+                <div class="mb-3">
+                    <label for="title" class="form-label">Event Title</label>
+                    <input type="text" class="form-control" id="title" name="title"
+                           value="{{ event.title }}" required>
+                </div>
+                <div class="mb-3">
+                    <label for="date" class="form-label">Date and Time</label>
+                    <input type="datetime-local" class="form-control" id="date" name="date"
+                           value="{{ event.date.strftime('%Y-%m-%dT%H:%M') }}"
+                           required pattern="\d{4}-\d{2}-\d{2}T\d{2}:\d{2}">
+                    <small class="form-text text-muted">
+                        Format: YYYY-MM-DDTHH:MM (e.g. 2023-12-31T14:30)
+                    </small>
+                </div>
+                <div class="mb-3">
+                    <label for="description" class="form-label">Description</label>
+                    <textarea class="form-control" id="description" name="description"
+                              rows="5" required>{{ event.description }}</textarea>
+                </div>
+                <div class="mb-3">
+                    <label for="organization_id" class="form-label">Organization</label>
+                    <select class="form-select" id="organization_id" name="organization_id" required>
+                        {% for org in organizations %}
+                        <option value="{{ org.id }}" {% if org.id= =event.organization_id %}selected{% endif %}>
+                            {{ org.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-warning">
+                    <i class="fas fa-save"></i> Update Event
+                </button>
+                <a href="{{ url_for('event_details', event_id=event.id) }}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Cancel
+                </a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

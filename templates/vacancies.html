@@ -24,7 +24,7 @@
                     <p class="card-text text-muted">{{ vacancy.description|truncate(250) }}</p>
                 </div>
                 <div class="card-footer bg-transparent">
-                    <a href="/vacancy/{{ vacancy.id }}" class="btn btn-outline-primary">
+                    <a href="{{ url_for('vacancy_details', vacancy_id=vacancy.id) }}" class="btn btn-outline-primary">
                         View Position Details
                     </a>
                 </div>
