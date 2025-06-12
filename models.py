@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
+from datetime import datetime,timedelta
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
+import secrets
 
 # Инициализация db здесь, чтобы избежать циклических импортов
 db = SQLAlchemy()
@@ -19,6 +20,28 @@ event_registrations = db.Table('event_registrations',
     db.Column('event_id', db.Integer, db.ForeignKey('events.id'), primary_key=True),
     db.Column('registered_at', db.DateTime, default=datetime.utcnow)
 )
+
+import secrets
+from datetime import datetime, timedelta
+
+
+class VerificationCode(db.Model):
+    __tablename__ = 'verification_codes'
+
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(120), nullable=False, unique=True)
+    code = db.Column(db.String(6), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    is_used = db.Column(db.Boolean, default=False)
+
+    def __init__(self, email):
+        self.email = email
+        self.code = ''.join(secrets.choice('0123456789') for _ in range(6))
+        self.expires_at = datetime.utcnow() + timedelta(minutes=15)
+
+    def is_valid(self):
+        return not self.is_used and datetime.utcnow() < self.expires_at
 
 class User(db.Model, UserMixin):
     __tablename__ = 'users'

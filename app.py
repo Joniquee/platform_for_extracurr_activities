@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from flask import Flask, request, render_template, redirect, url_for, flash
+from flask import Flask, request, render_template, redirect, url_for, flash, session
 from flask_login import (
     LoginManager,
     login_user,
@@ -10,14 +10,19 @@ from flask_login import (
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 from config import Config
-from models import db, User, Organization, Event, Vacancy, Application
+from models import db, User, Organization, Event, Vacancy, Application, VerificationCode
+from flask import jsonify
+from flask_mail import Mail, Message
 
-
+mail = Mail()
 def create_app():
     app = Flask(__name__, template_folder='templates')
     app.config.from_object(Config)
 
+    import logging
+    logging.basicConfig(level=logging.DEBUG)
     db.init_app(app)
+    mail.init_app(app)
 
     login_manager = LoginManager(app)
     login_manager.login_view = 'login'
@@ -50,7 +55,164 @@ def create_app():
 def register_routes(app):
     """Register all routes"""
 
-    # Public routes (no auth required)
+    @app.route('/send_verification', methods=['POST'])
+    def _send_verification_email(email):
+        try:
+            # Удаляем старые коды для этого email
+            VerificationCode.query.filter_by(email=email).delete()
+
+            # Создаем и сохраняем новый код
+            verification = VerificationCode(email=email)
+            db.session.add(verification)
+            db.session.commit()
+
+            # Отправляем письмо
+            msg = Message(
+                'Ваш код подтверждения',
+                recipients=[email],
+                body=f'Ваш код подтверждения: {verification.code}'
+            )
+            mail.send(msg)
+            return True
+        except Exception as e:
+            print(f"Failed to send email: {e}")
+            db.session.rollback()
+            return False
+
+    @app.route('/send_verification', methods=['POST'])
+    def send_verification():
+        """Отправка кода подтверждения на email"""
+        email = request.form.get('email')
+        if not email:
+            return jsonify({'status': 'error', 'message': 'Email не указан'}), 400
+
+        try:
+            # Удаляем старые коды для этого email
+            VerificationCode.query.filter_by(email=email).delete()
+
+            # Создаем и сохраняем новый код
+            verification = VerificationCode(email=email)
+            db.session.add(verification)
+            db.session.commit()
+
+            # Отправляем письмо
+            msg = Message(
+                'Ваш код подтверждения',
+                sender=app.config['MAIL_DEFAULT_SENDER'],
+                recipients=[email],
+                body=f'Ваш код подтверждения: {verification.code}'
+            )
+            mail.send(msg)
+            return jsonify({'status': 'success'})
+        except Exception as e:
+            app.logger.error(f"Ошибка отправки письма: {e}")
+            db.session.rollback()
+            return jsonify({'status': 'error', 'message': str(e)}), 500
+
+    @app.route('/verify_email', methods=['GET', 'POST'])
+    def verify_email():
+        if request.method == 'POST':
+            email = request.form.get('email')
+            user_code = request.form.get('verification_code')
+
+            verification = VerificationCode.query.filter_by(email=email).first()
+
+            if not verification or verification.code != user_code:
+                flash('Неверный код подтверждения', 'error')
+                return redirect(url_for('verify_email'))
+
+            if not verification.is_valid():
+                flash('Срок действия кода истек', 'error')
+                return redirect(url_for('verify_email'))
+
+            # Помечаем код как использованный
+            verification.is_used = True
+            db.session.commit()
+
+            # Находим или создаем пользователя
+            user = User.query.filter_by(email=email).first()
+            if not user:
+                # Создаем нового пользователя из временных данных в сессии
+                temp_user = session.get('temp_user')
+                if not temp_user:
+                    flash('Сессия истекла. Зарегистрируйтесь снова.', 'error')
+                    return redirect(url_for('register'))
+
+                user = User(
+                    username=temp_user['username'],
+                    email=email,
+                    password=temp_user['password']
+                )
+                db.session.add(user)
+                db.session.commit()
+
+            # Выполняем вход пользователя
+            login_user(user)
+            flash('Email успешно подтвержден!', 'success')
+            return redirect(url_for('dashboard'))  # Перенаправляем в личный кабинет
+
+        return render_template('verify_email.html', email=request.args.get('email'))
+    @app.route('/resend_code')
+    def resend_code():
+        email = request.args.get('email')
+        _send_verification_email(email)
+        flash('Новый код отправлен на ваш email', 'info')
+        return redirect(url_for('verify_email', email=email))
+
+    # Обновите маршрут регистрации
+    @app.route('/register', methods=['GET', 'POST'])
+    def register():
+        if current_user.is_authenticated:
+            return redirect(url_for('dashboard'))
+
+        if request.method == 'POST':
+            username = request.form.get('username')
+            email = request.form.get('email')
+            password = request.form.get('password')
+
+            if User.query.filter_by(email=email).first():
+                flash('Email уже зарегистрирован', 'error')
+                return redirect(url_for('register'))
+
+            # Сохраняем данные в сессии перед подтверждением email
+            session['temp_user'] = {
+                'username': username,
+                'email': email,
+                'password': generate_password_hash(password)
+            }
+
+            # Отправляем код подтверждения
+            _send_verification_email(email)
+            return redirect(url_for('verify_email', email=email))
+
+        return render_template('register.html')
+
+    # Обновите маршрут входа
+    @app.route('/login', methods=['GET', 'POST'])
+    def login():
+        if current_user.is_authenticated:
+            return redirect(url_for('dashboard'))
+
+        if request.method == 'POST':
+            email = request.form.get('email')
+            password = request.form.get('password')
+            user = User.query.filter_by(email=email).first()
+
+            if user and check_password_hash(user.password, password):
+                # Сохраняем ID пользователя в сессии для верификации
+                session['login_user_id'] = user.id
+                _send_verification_email(email)
+                return redirect(url_for('verify_email', email=email))
+            else:
+                flash('Неверный email или пароль', 'error')
+
+        return render_template('login.html')
+
+    @app.route('/logout')
+    def logout():
+        logout_user()
+        return redirect(url_for('index'))
+
     @app.route('/')
     def index():
         return render_template('index.html')
@@ -364,62 +526,6 @@ def register_routes(app):
         db.session.commit()
         flash('Event has been deleted', 'success')
         return redirect(url_for('events'))
-
-
-
-    # Auth routes
-    @app.route('/register', methods=['GET', 'POST'])
-    def register():
-        if current_user.is_authenticated:
-            return redirect(url_for('dashboard'))
-
-        if request.method == 'POST':
-            username = request.form.get('username')
-            email = request.form.get('email')
-            password = request.form.get('password')
-
-            if User.query.filter_by(email=email).first():
-                flash('Email already registered', 'error')
-                return redirect(url_for('register'))
-
-            new_user = User(
-                username=username,
-                email=email,
-                password=generate_password_hash(password, method='pbkdf2:sha256'),
-                role='user'
-            )
-
-            db.session.add(new_user)
-            db.session.commit()
-
-            flash('Registration successful! Please login.', 'success')
-            return redirect(url_for('login'))
-
-        return render_template('register.html')
-
-    @app.route('/login', methods=['GET', 'POST'])
-    def login():
-        if current_user.is_authenticated:
-            return redirect(url_for('dashboard'))
-
-        if request.method == 'POST':
-            email = request.form.get('email')
-            password = request.form.get('password')
-            user = User.query.filter_by(email=email).first()
-
-            if user and check_password_hash(user.password, password):
-                login_user(user, remember=True)
-                next_page = request.args.get('next')
-                return redirect(next_page or url_for('dashboard'))
-            else:
-                flash('Invalid email or password', 'error')
-
-        return render_template('login.html')
-
-    @app.route('/logout')
-    def logout():
-        logout_user()
-        return redirect(url_for('index'))
 
     # Protected routes (require auth)
     @app.route('/dashboard')
