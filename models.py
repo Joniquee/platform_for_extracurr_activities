@@ -13,6 +13,13 @@ organization_members = db.Table('organization_members',
     db.Column('organization_id', db.Integer, db.ForeignKey('organizations.id'), primary_key=True)
 )
 
+# Minimal addition for event registrations
+event_registrations = db.Table('event_registrations',
+    db.Column('user_id', db.Integer, db.ForeignKey('users.id'), primary_key=True),
+    db.Column('event_id', db.Integer, db.ForeignKey('events.id'), primary_key=True),
+    db.Column('registered_at', db.DateTime, default=datetime.utcnow)
+)
+
 class User(db.Model, UserMixin):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
@@ -54,6 +61,10 @@ class Event(db.Model):
     description = db.Column(db.Text)
     organization_id = db.Column(db.Integer, db.ForeignKey('organizations.id'))
     
+    # Minimal addition - relationship for registrations
+    registrations = db.relationship('User', secondary=event_registrations,
+                                  backref=db.backref('registered_events', lazy='dynamic'))
+    
     def __repr__(self):
         return f'<Event {self.title} on {self.date}>'
 
@@ -80,7 +91,7 @@ class Application(db.Model):
     telegram = db.Column(db.String(50))
     course = db.Column(db.Integer, nullable=False)
     study_group = db.Column(db.String(20), nullable=False)
-    status = db.Column(db.String(20), default='pending')  # pending, reviewed, rejected, accepted
+    status = db.Column(db.String(20), default='pending')
     applied_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     user = db.relationship('User', backref='applications')

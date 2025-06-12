@@ -157,6 +157,83 @@ def register_routes(app):
     
         return render_template('apply_for_vacancy.html', vacancy=vacancy)
 
+
+    @app.route('/organization/<int:org_id>/applications')
+    @login_required
+    def organization_applications(org_id):
+        org = Organization.query.get_or_404(org_id)
+    
+        # Проверка прав (только лидер организации или админы)
+        if org.leader_id != current_user.id and current_user.role not in ['root_admin', 'admin']:
+            flash('Access denied', 'error')
+            return redirect(url_for('dashboard'))
+    
+        # Получаем все заявки для вакансий этой организации
+        applications = db.session.query(Application).join(Vacancy).filter(
+            Vacancy.organization_id == org_id
+        ).order_by(Application.status, Application.applied_at.desc()).all()
+    
+        return render_template('organization_applications.html', 
+                             organization=org,
+                             applications=applications)
+
+    @app.route('/application/<int:app_id>/update_status', methods=['POST'])
+    @login_required
+    def update_application_status(app_id):
+        application = Application.query.get_or_404(app_id)
+        vacancy = application.vacancy
+        org = vacancy.organization
+    
+        # Проверка прав (только лидер организации или админы)
+        if org.leader_id != current_user.id and current_user.role not in ['root_admin', 'admin']:
+            flash('Access denied', 'error')
+            return redirect(url_for('dashboard'))
+    
+        new_status = request.form.get('status')
+        if new_status not in ['accepted', 'rejected', 'pending']:
+            flash('Invalid status', 'error')
+            return redirect(url_for('organization_applications', org_id=org.id))
+    
+        application.status = new_status
+        db.session.commit()
+    
+        # Если заявка принята, добавляем пользователя в члены организации
+        if new_status == 'accepted' and application.user not in org.members:
+            org.members.append(application.user)
+            db.session.commit()
+            flash(f'User {application.user.username} has been added to organization members', 'success')
+        else:
+            flash('Application status updated', 'success')
+    
+        return redirect(url_for('organization_applications', org_id=org.id))
+
+    @app.route('/vacancy_application/<int:app_id>/update', methods=['POST'])
+    @login_required
+    def update_vacancy_application_status(app_id):
+        application = Application.query.get_or_404(app_id)
+        vacancy = application.vacancy
+    
+        # Проверка прав (только лидер организации или админы)
+        if vacancy.organization.leader_id != current_user.id and current_user.role not in ['root_admin', 'admin']:
+            flash('Access denied', 'error')
+            return redirect(url_for('vacancy_details', vacancy_id=vacancy.id))
+    
+        new_status = request.form.get('status')
+        if new_status not in ['accepted', 'rejected', 'pending']:
+            flash('Invalid status', 'error')
+            return redirect(url_for('vacancy_details', vacancy_id=vacancy.id))
+    
+        application.status = new_status
+    
+        # Если заявка принята, добавляем пользователя в члены организации
+        if new_status == 'accepted' and application.user not in vacancy.organization.members:
+            vacancy.organization.members.append(application.user)
+    
+        db.session.commit()
+    
+        flash(f'Application status updated to {new_status}', 'success')
+        return redirect(url_for('vacancy_details', vacancy_id=vacancy.id))
+
     #organisations logic
     @app.route('/organization/<int:org_id>')
     def organization_public_details(org_id):
@@ -167,6 +244,29 @@ def register_routes(app):
                              organization=org,
                              events=events,
                              vacancies=vacancies)
+
+    @app.route('/organization/<int:org_id>/remove_member/<int:user_id>', methods=['POST'])
+    @login_required
+    def remove_member(org_id, user_id):
+        org = Organization.query.get_or_404(org_id)
+        user = User.query.get_or_404(user_id)
+    
+        # Проверка прав (только лидер организации или админы)
+        if org.leader_id != current_user.id and current_user.role not in ['root_admin', 'admin']:
+            flash('Access denied', 'error')
+            return redirect(url_for('organization_details', org_id=org_id))
+    
+        if user in org.members:
+            org.members.remove(user)
+            db.session.commit()
+            flash(f'User {user.username} has been removed from organization', 'success')
+        else:
+            flash('User is not a member of this organization', 'warning')
+    
+        return redirect(url_for('organization_details', org_id=org_id))
+
+
+
 
     #event logic
     @app.route('/event/<int:event_id>')
@@ -180,13 +280,41 @@ def register_routes(app):
     def register_for_event(event_id):
         event = Event.query.get_or_404(event_id)
     
+        # Проверяем, не зарегистрирован ли пользователь уже
+        if current_user in event.registrations:
+            flash('You are already registered for this event', 'warning')
+            return redirect(url_for('event_details', event_id=event.id))
+    
         if request.method == 'POST':
-            # Логика регистрации пользователя на событие
-            # Например: добавление записи в таблицу участников
+            # Регистрируем пользователя на событие
+            event.registrations.append(current_user)
+            db.session.commit()
+        
             flash('You have successfully registered for this event!', 'success')
             return redirect(url_for('event_details', event_id=event.id))
     
-        return render_template('register_for_event.html', event=event)  # Исправлено: event вместо events
+        return render_template('register_for_event.html', event=event)
+    
+    @app.route('/event/<int:event_id>/registrations')
+    @login_required
+    def event_registrations(event_id):
+        event = Event.query.get_or_404(event_id)
+        organization = event.organization
+
+        # Проверка прав
+        if current_user.role not in ['root_admin', 'admin']:
+            if not organization or current_user.id != organization.leader_id:
+                flash('Access denied', 'error')
+                return redirect(url_for('event_details', event_id=event.id))
+
+        # Просто получаем всех зарегистрированных пользователей
+        registrations = event.registrations  # Это уже список пользователей
+
+        return render_template('event_registrations.html', 
+                             event=event,
+                             organization=organization,
+                             registrations=registrations)
+
 
     @app.route('/event/<int:event_id>/edit', methods=['GET', 'POST'])
     @login_required
