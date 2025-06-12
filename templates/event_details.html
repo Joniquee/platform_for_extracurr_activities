@@ -68,16 +68,6 @@
 
                 <div>
                     {% if current_user.is_authenticated %}
-                    {% set can_view_registrations = current_user.role in ['admin', 'root_admin'] or
-                    (organization and current_user.id == organization.leader_id) %}
-
-                    {% if can_view_registrations %}
-                    <a href="{{ url_for('event_registrations', event_id=event.id) }}"
-                       class="btn btn-info me-2">
-                        <i class="fas fa-users"></i> View Registrations
-                    </a>
-                    {% endif %}
-
                     {% if current_user not in event.registrations %}
                     <a href="{{ url_for('register_for_event', event_id=event.id) }}"
                        class="btn btn-success">

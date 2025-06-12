@@ -1,51 +1,31 @@
 {% extends "base.html" %}
 
-{% block title %}Create Account{% endblock %}
-
 {% block content %}
-<div class="container py-5">
+<div class="container mt-5">
     <div class="row justify-content-center">
-        <div class="col-md-8 col-lg-6">
-            <div class="card shadow-sm">
+        <div class="col-md-6">
+            <div class="card shadow">
                 <div class="card-header bg-primary text-white">
-                    <h2 class="mb-0 text-center">Create Your Account</h2>
+                    <h4>Регистрация</h4>
                 </div>
-                <div class="card-body p-4">
-                    <form method="POST" action="/register">
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('register') }}">
                         <div class="mb-3">
-                            <label for="username" class="form-label">Username</label>
-                            <input type="text" class="form-control"
-                                   id="username" name="username"
-                                   placeholder="Enter your username" required>
+                            <label for="username" class="form-label">Имя пользователя</label>
+                            <input type="text" class="form-control" id="username" name="username" required>
                         </div>
-
                         <div class="mb-3">
-                            <label for="email" class="form-label">Email Address</label>
-                            <input type="email" class="form-control"
-                                   id="email" name="email"
-                                   placeholder="your.email@example.com" required>
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" name="email" required>
                         </div>
-
-                        <div class="mb-4">
-                            <label for="password" class="form-label">Password</label>
-                            <input type="password" class="form-control"
-                                   id="password" name="password"
-                                   placeholder="Create a password" required>
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Пароль</label>
+                            <input type="password" class="form-control" id="password" name="password" required>
                         </div>
-
                         <div class="d-grid">
-                            <button type="submit" class="btn btn-primary btn-lg">
-                                Create Account
-                            </button>
+                            <button type="submit" class="btn btn-primary">Зарегистрироваться</button>
                         </div>
                     </form>
-
-                    <div class="text-center mt-4">
-                        <p class="mb-0">
-                            Already have an account?
-                            <a href="/login" class="fw-bold">Sign In</a>
-                        </p>
-                    </div>
                 </div>
             </div>
         </div>

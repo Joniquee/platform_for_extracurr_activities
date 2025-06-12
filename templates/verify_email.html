@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4>Подтверждение email</h4>
+                </div>
+                <div class="card-body">
+                    <p>Мы отправили код подтверждения на <strong>{{ email }}</strong>.</p>
+                    <p>Пожалуйста, введите его ниже:</p>
+                    
+                    <form method="POST" action="{{ url_for('verify_email') }}">
+                        <input type="hidden" name="email" value="{{ email }}">
+                        
+                        <div class="mb-3">
+                            <label for="verification_code" class="form-label">Код подтверждения</label>
+                            <input type="text" class="form-control" id="verification_code" 
+                                   name="verification_code" required autofocus>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Подтвердить</button>
+                            <a href="{{ url_for('resend_code', email=email) }}" class="btn btn-link">
+                                Отправить код повторно
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
