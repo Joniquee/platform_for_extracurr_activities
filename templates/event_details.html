@@ -9,10 +9,8 @@
             <div class="d-flex justify-content-between align-items-center">
                 <h3>{{ event.title }}</h3>
                 {% if current_user.is_authenticated %}
-                {% set can_manage = current_user.role in ['admin', 'root_admin'] %}
-                {% if organization %}
-                {% set can_manage = can_manage or current_user.id == organization.leader_id %}
-                {% endif %}
+                {% set can_manage = current_user.role in ['admin', 'root_admin'] or
+                (organization and current_user.id == organization.leader_id) %}
 
                 {% if can_manage %}
                 <div>
@@ -48,6 +46,13 @@
                         <strong>Location:</strong><br>
                         {{ event.location or 'Not specified' }}
                     </p>
+
+                    {% if event.registrations %}
+                    <p>
+                        <strong>Registered participants:</strong><br>
+                        {{ event.registrations|length }}
+                    </p>
+                    {% endif %}
                 </div>
                 <div class="col-md-6">
                     <h5><i class="fas fa-info-circle"></i> Description</h5>
@@ -56,14 +61,36 @@
             </div>
         </div>
         <div class="card-footer bg-transparent">
-            <a href="{{ url_for('events') }}" class="btn btn-secondary">
-                <i class="fas fa-arrow-left"></i> Back to Events
-            </a>
-            {% if current_user.is_authenticated %}
-            <a href="{{ url_for('register_for_event', event_id=event.id) }}" class="btn btn-success float-end">
-                <i class="fas fa-user-plus"></i> Register for Event
-            </a>
-            {% endif %}
+            <div class="d-flex justify-content-between">
+                <a href="{{ url_for('events') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Events
+                </a>
+
+                <div>
+                    {% if current_user.is_authenticated %}
+                    {% set can_view_registrations = current_user.role in ['admin', 'root_admin'] or
+                    (organization and current_user.id == organization.leader_id) %}
+
+                    {% if can_view_registrations %}
+                    <a href="{{ url_for('event_registrations', event_id=event.id) }}"
+                       class="btn btn-info me-2">
+                        <i class="fas fa-users"></i> View Registrations
+                    </a>
+                    {% endif %}
+
+                    {% if current_user not in event.registrations %}
+                    <a href="{{ url_for('register_for_event', event_id=event.id) }}"
+                       class="btn btn-success">
+                        <i class="fas fa-user-plus"></i> Register
+                    </a>
+                    {% else %}
+                    <button class="btn btn-outline-success" disabled>
+                        <i class="fas fa-check"></i> Already Registered
+                    </button>
+                    {% endif %}
+                    {% endif %}
+                </div>
+            </div>
         </div>
     </div>
 </div>

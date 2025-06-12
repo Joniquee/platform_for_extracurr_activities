@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Participants for "{{ event.title }}"</h2>
+
+    <div class="card mt-3">
+        <div class="card-header">
+            <h5>Registered Users ({{ registrations|length }})</h5>
+        </div>
+        <div class="card-body">
+            {% if registrations %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Registration Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in registrations %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td>{{ user.username }}</td>
+                            <td>{{ user.email }}</td>
+                            <td>
+                                {% for reg in user.registered_events %}
+                                {% if reg.id == event.id %}
+                                {{ reg.registered_at.strftime('%d.%m.%Y %H:%M') }}
+                                {% endif %}
+                                {% endfor %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info">No registered participants yet</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <a href="{{ url_for('event_details', event_id=event.id) }}" class="btn btn-primary mt-3">
+        Back to Event
+    </a>
+</div>
+{% endblock %}

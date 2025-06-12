@@ -11,7 +11,7 @@
 
             {% if current_user.is_authenticated and (current_user.role in ['admin', 'root_admin'] or current_user.id == organization.leader_id) %}
             <a href="{{ url_for('organization_details', org_id=organization.id) }}" class="btn btn-primary">
-                Manage Organization
+                Manage Organization (Admin View)
             </a>
             {% endif %}
         </div>

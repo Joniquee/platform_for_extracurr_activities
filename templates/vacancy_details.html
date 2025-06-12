@@ -72,7 +72,7 @@
                 </div>
             </div>
 
-            {% if current_user.is_authenticated and (current_user.role in ['admin', 'root_admin'] or current_user.id == vacancy.organization.leader_id) %}
+            {% if current_user.is_authenticated and (current_user.role in ['admin', 'root_admin'] or (organization and current_user.id == organization.leader_id)) %}
             <div class="mt-4">
                 <h5><i class="fas fa-users"></i> Applications ({{ vacancy.applications|length }})</h5>
 
@@ -108,8 +108,25 @@
                                     </span>
                                 </td>
                                 <td>
-                                    <a href="#" class="btn btn-sm btn-outline-success">Accept</a>
-                                    <a href="#" class="btn btn-sm btn-outline-danger">Reject</a>
+                                    {% if app.status != 'accepted' %}
+                                    <form method="POST" action="{{ url_for('update_vacancy_application_status', app_id=app.id) }}" class="d-inline">
+                                        <input type="hidden" name="status" value="accepted">
+                                        <button type="submit" class="btn btn-sm btn-success"
+                                                onclick="return confirm('Accept this application?')">
+                                            Accept
+                                        </button>
+                                    </form>
+                                    {% endif %}
+
+                                    {% if app.status != 'rejected' %}
+                                    <form method="POST" action="{{ url_for('update_vacancy_application_status', app_id=app.id) }}" class="d-inline ms-1">
+                                        <input type="hidden" name="status" value="rejected">
+                                        <button type="submit" class="btn btn-sm btn-danger"
+                                                onclick="return confirm('Reject this application?')">
+                                            Reject
+                                        </button>
+                                    </form>
+                                    {% endif %}
                                 </td>
                             </tr>
                             {% endfor %}
