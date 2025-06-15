@@ -260,22 +260,30 @@ def register_routes(app):
         return render_template('edit_vacancy.html', 
                              vacancy=vacancy,
                              organizations=organizations)
-
-    @app.route('/vacancy/<int:vacancy_id>/delete', methods=['POST'])
-    @login_required
-    def delete_vacancy(vacancy_id):
-        vacancy = Vacancy.query.get_or_404(vacancy_id)
-        organization = Organization.query.get(vacancy.organization_id) if vacancy.organization_id else None
+@app.route('/vacancy/<int:vacancy_id>/delete', methods=['POST'])
+@login_required
+def delete_vacancy(vacancy_id):
+    vacancy = Vacancy.query.get_or_404(vacancy_id)
+    organization = Organization.query.get(vacancy.organization_id) if vacancy.organization_id else None
     
-        # Проверка прав
-        if current_user.role not in ['admin', 'root_admin']:
-            if not organization or current_user.id != organization.leader_id:
-                flash('Access denied', 'error')
-                return redirect(url_for('vacancy_details', vacancy_id=vacancy.id))
+    # Check permissions:
+    # - Admins can delete any vacancy
+    # - Organization leaders can only delete vacancies from their organization
+    if current_user.role not in ['admin', 'root_admin']:
+        if not organization or current_user.id != organization.leader_id:
+            flash('Access denied', 'error')
+            return redirect(url_for('vacancy_details', vacancy_id=vacancy.id))
 
-        db.session.delete(vacancy)
-        db.session.commit()
-        flash('Vacancy has been deleted', 'success')
+    db.session.delete(vacancy)
+    db.session.commit()
+    flash('Vacancy has been deleted', 'success')
+    
+    # Redirect to appropriate page based on user role
+    if current_user.role in ['admin', 'root_admin']:
+        return redirect(url_for('vacancies'))
+    elif organization and current_user.id == organization.leader_id:
+        return redirect(url_for('organization_details', org_id=organization.id))
+    else:
         return redirect(url_for('vacancies'))
 
     @app.route('/vacancy/<int:vacancy_id>/apply', methods=['GET', 'POST'])
