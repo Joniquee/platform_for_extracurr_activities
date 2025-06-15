@@ -215,7 +215,15 @@ def register_routes(app):
 
     @app.route('/organizations')
     def organizations():
-        orgs = Organization.query.all()
+        search_query = request.args.get('search', '').strip()
+    
+        if search_query:
+            orgs = Organization.query.filter(
+                Organization.name.ilike(f'%{search_query}%')
+            ).all()
+        else:
+            orgs = Organization.query.all()
+    
         return render_template('organizations.html', organizations=orgs)
 
     @app.route('/events')
