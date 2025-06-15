@@ -6,25 +6,38 @@
         <div class="col-md-6">
             <div class="card shadow">
                 <div class="card-header bg-primary text-white">
-                    <h4>Подтверждение email</h4>
+                    <h4>Email Verification</h4>
                 </div>
                 <div class="card-body">
-                    <p>Мы отправили код подтверждения на <strong>{{ email }}</strong>.</p>
-                    <p>Пожалуйста, введите его ниже:</p>
-                    
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                    {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+                    {% endwith %}
+
+                    <p>We've sent a verification code to <strong>{{ email }}</strong>.</p>
+                    <p>Please enter it below:</p>
+
                     <form method="POST" action="{{ url_for('verify_email') }}">
                         <input type="hidden" name="email" value="{{ email }}">
-                        
+
                         <div class="mb-3">
-                            <label for="verification_code" class="form-label">Код подтверждения</label>
-                            <input type="text" class="form-control" id="verification_code" 
-                                   name="verification_code" required autofocus>
+                            <label for="verification_code" class="form-label">Verification Code</label>
+                            <input type="text" class="form-control" id="verification_code"
+                                   name="verification_code" required autofocus
+                                   pattern="[0-9]{6}" title="Code must contain 6 digits">
+                            <div class="form-text">Enter the 6-digit code from your email</div>
                         </div>
-                        
+
                         <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary">Подтвердить</button>
-                            <a href="{{ url_for('resend_code', email=email) }}" class="btn btn-link">
-                                Отправить код повторно
+                            <button type="submit" class="btn btn-primary">Verify</button>
+                            <a href="{{ url_for('resend_code', email=email) }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-repeat"></i> Resend Code
                             </a>
                         </div>
                     </form>
