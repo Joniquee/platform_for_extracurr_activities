@@ -171,17 +171,15 @@ def register_routes(app):
             password = request.form.get('password')
 
             if User.query.filter_by(email=email).first():
-                flash('Email уже зарегистрирован', 'error')
+                flash('Email already registered', 'error')
                 return redirect(url_for('register'))
 
-            # Сохраняем данные в сессии перед подтверждением email
             session['temp_user'] = {
                 'username': username,
                 'email': email,
                 'password': generate_password_hash(password)
             }
 
-            # Отправляем код подтверждения
             _send_verification_email(email)
             return redirect(url_for('verify_email', email=email))
 
@@ -199,12 +197,10 @@ def register_routes(app):
             user = User.query.filter_by(email=email).first()
 
             if user and check_password_hash(user.password, password):
-                # Сохраняем ID пользователя в сессии для верификации
-                session['login_user_id'] = user.id
-                _send_verification_email(email)
-                return redirect(url_for('verify_email', email=email))
+                login_user(user)
+                return redirect(url_for('dashboard'))
             else:
-                flash('Неверный email или пароль', 'error')
+                flash('Invalid email or password', 'error')
 
         return render_template('login.html')
 
@@ -482,33 +478,23 @@ def register_routes(app):
     @login_required
     def edit_event(event_id):
         event = Event.query.get_or_404(event_id)
-        organization = Organization.query.get(event.organization_id)
     
-        # Проверка прав (только админы или лидер организации)
-        if current_user.role not in ['root_admin', 'admin'] and current_user.id != organization.leader_id:
-            flash('Access denied', 'error')
-            return redirect(url_for('event_details', event_id=event.id))
+        # Проверка прав доступа
+        if current_user.role not in ['root_admin', 'admin']:
+            # Проверяем, является ли пользователь лидером организации
+            org = Organization.query.get(event.organization_id)
+            if not org or current_user.id != org.leader_id:
+                flash('Access denied', 'error')
+                return redirect(url_for('event_details', event_id=event.id))
 
         if request.method == 'POST':
-            event.title = request.form.get('title')
-            date_str = request.form.get('date')
-            event.description = request.form.get('description')
-            event.organization_id = request.form.get('organization_id')
-        
-            try:
-                event.date = datetime.strptime(date_str, '%Y-%m-%dT%H:%M')
-            except ValueError:
-                flash('Invalid date format', 'error')
-                return redirect(url_for('edit_event', event_id=event.id))
-        
+            # Изменяем ТОЛЬКО описание
+            event.description = request.form['description']
             db.session.commit()
-            flash('Event updated successfully!', 'success')
+            flash('Description updated successfully!', 'success')
             return redirect(url_for('event_details', event_id=event.id))
     
-        organizations = Organization.query.all()
-        return render_template('edit_event.html', 
-                             event=event,
-                             organizations=organizations)
+        return render_template('edit_event.html', event=event)
 
     @app.route('/event/<int:event_id>/delete', methods=['POST'])
     @login_required
