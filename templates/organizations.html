@@ -13,6 +13,30 @@
         {% endif %}
     </div>
 
+    <!-- Search Section -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('organizations') }}" class="row g-3">
+                <div class="col-md-8">
+                    <input type="text" name="search" class="form-control"
+                           placeholder="Search organizations by name..."
+                           value="{{ request.args.get('search', '') }}">
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search"></i> Search
+                    </button>
+                </div>
+                <div class="col-md-2">
+                    <a href="{{ url_for('organizations') }}" class="btn btn-outline-secondary w-100">
+                        <i class="fas fa-times"></i> Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if organizations %}
     <div class="row">
         {% for org in organizations %}
         <div class="col-xl-3 col-lg-4 col-md-6 mb-4">
@@ -30,5 +54,14 @@
         </div>
         {% endfor %}
     </div>
+    {% else %}
+    <div class="alert alert-info">
+        {% if request.args.get('search') %}
+        No organizations found matching "{{ request.args.get('search') }}"
+        {% else %}
+        No organizations currently registered
+        {% endif %}
+    </div>
+    {% endif %}
 </div>
 {% endblock %}
