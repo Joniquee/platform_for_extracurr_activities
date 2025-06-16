@@ -24,6 +24,14 @@ event_registrations = db.Table('event_registrations',
 import secrets
 from datetime import datetime, timedelta
 
+class OrganizationCategory(db.Model):
+    __tablename__ = 'organization_categories'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False, unique=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<Category {self.name}>'
 
 class VerificationCode(db.Model):
     __tablename__ = 'verification_codes'
@@ -66,6 +74,8 @@ class Organization(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
+    category_id = db.Column(db.Integer, db.ForeignKey('organization_categories.id'))
+    category = db.relationship('OrganizationCategory', backref='organizations')
     leader_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     leader = db.relationship('User', backref='led_organizations')
     events = db.relationship('Event', backref='organization', lazy=True)
