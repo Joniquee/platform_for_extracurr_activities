@@ -6,31 +6,42 @@
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>Student Organizations Directory</h2>
-        {% if current_user.role == 'admin' %}
-        <a href="/admin/add_organization" class="btn btn-success">
+        {% if current_user.role in ['admin', 'root_admin'] %}
+        <a href="{{ url_for('create_organization') }}" class="btn btn-success">
             + Add New Organization
         </a>
         {% endif %}
     </div>
 
-    <!-- Search Section -->
+    <!-- Search and Filter Section -->
     <div class="card mb-4 shadow-sm">
         <div class="card-body">
             <form method="GET" action="{{ url_for('organizations') }}" class="row g-3">
-                <div class="col-md-8">
+                <div class="col-md-5">
                     <input type="text" name="search" class="form-control"
                            placeholder="Search organizations by name..."
                            value="{{ request.args.get('search', '') }}">
                 </div>
-                <div class="col-md-2">
-                    <button type="submit" class="btn btn-primary w-100">
-                        <i class="fas fa-search"></i> Search
-                    </button>
+                <div class="col-md-4">
+                    <select name="category" class="form-select">
+                        <option value="">All Categories</option>
+                        {% for category in categories %}
+                        <option value="{{ category.id }}"
+                                {% if selected_category == category.id %}selected{% endif %}>
+                            {{ category.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
                 </div>
-                <div class="col-md-2">
-                    <a href="{{ url_for('organizations') }}" class="btn btn-outline-secondary w-100">
-                        <i class="fas fa-times"></i> Clear
-                    </a>
+                <div class="col-md-3">
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <button type="submit" class="btn btn-primary me-md-2">
+                            <i class="fas fa-filter"></i> Apply
+                        </button>
+                        <a href="{{ url_for('organizations') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times"></i> Clear
+                        </a>
+                    </div>
                 </div>
             </form>
         </div>
@@ -43,10 +54,14 @@
             <div class="card h-100 shadow-sm">
                 <div class="card-body">
                     <h5 class="card-title">{{ org.name }}</h5>
+                    {% if org.category %}
+                    <span class="badge bg-info mb-2">{{ org.category.name }}</span>
+                    {% endif %}
                     <p class="card-text text-muted">{{ org.description|truncate(120) }}</p>
                 </div>
                 <div class="card-footer bg-transparent">
-                    <a href="/organization/{{ org.id }}" class="btn btn-outline-primary btn-sm">
+                    <a href="{{ url_for('organization_public_details', org_id=org.id) }}"
+                       class="btn btn-outline-primary btn-sm">
                         View Details
                     </a>
                 </div>
@@ -56,8 +71,8 @@
     </div>
     {% else %}
     <div class="alert alert-info">
-        {% if request.args.get('search') %}
-        No organizations found matching "{{ request.args.get('search') }}"
+        {% if request.args.get('search') or selected_category %}
+        No organizations found matching your criteria
         {% else %}
         No organizations currently registered
         {% endif %}
