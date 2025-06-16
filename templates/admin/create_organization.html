@@ -21,6 +21,26 @@
                             <textarea class="form-control" id="description" name="description" rows="3"></textarea>
                         </div>
                         <div class="mb-3">
+                            <label for="category_id" class="form-label">Category</label>
+                            <select class="form-select" id="category_id" name="category_id" required>
+                                <option value="">Select Category</option>
+                                {% for category in categories %}
+                                <option value="{{ category.id }}">{{ category.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        {% if is_root_admin %}
+                        <div class="mb-3">
+                            <label class="form-label">Or Add New Category</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="new_category_name" name="new_category_name" placeholder="New category name">
+                                <button type="button" class="btn btn-outline-secondary" onclick="useNewCategory()">Use This</button>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <div class="mb-3">
                             <label for="leader_id" class="form-label">Leader</label>
                             <select class="form-select" id="leader_id" name="leader_id" required>
                                 <option value="">Select Leader</option>
@@ -41,4 +61,21 @@
         </div>
     </div>
 </div>
+
+{% if is_root_admin %}
+<script>
+function useNewCategory() {
+    const newCategoryName = document.getElementById('new_category_name').value;
+    if (newCategoryName) {
+        const categorySelect = document.getElementById('category_id');
+        // Temporarily add the new option
+        const newOption = document.createElement('option');
+        newOption.value = 'new';
+        newOption.textContent = 'New: ' + newCategoryName;
+        newOption.selected = true;
+        categorySelect.appendChild(newOption);
+    }
+}
+</script>
+{% endif %}
 {% endblock %}
