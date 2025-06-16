@@ -11,6 +11,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 from config import Config
 from models import db, User, Organization, Event, Vacancy, Application, VerificationCode
+from models import OrganizationCategory
 from flask import jsonify
 from flask_mail import Mail, Message
 
@@ -213,18 +214,6 @@ def register_routes(app):
     def index():
         return render_template('index.html')
 
-    @app.route('/organizations')
-    def organizations():
-        search_query = request.args.get('search', '').strip()
-    
-        if search_query:
-            orgs = Organization.query.filter(
-                Organization.name.ilike(f'%{search_query}%')
-            ).all()
-        else:
-            orgs = Organization.query.all()
-    
-        return render_template('organizations.html', organizations=orgs)
 
     @app.route('/events')
     def events():
@@ -447,6 +436,139 @@ def register_routes(app):
         return redirect(url_for('organization_details', org_id=org_id))
 
 
+
+
+        # Добавим маршруты для управления категориями
+    @app.route('/admin/categories')
+    @login_required
+    def manage_categories():
+        if current_user.role != 'root_admin':
+            flash('Access denied', 'error')
+            return redirect(url_for('dashboard'))
+    
+        categories = OrganizationCategory.query.order_by(OrganizationCategory.name).all()
+        return render_template('admin/categories.html', categories=categories)
+
+    @app.route('/admin/categories/add', methods=['GET', 'POST'])
+    @login_required
+    def add_category():
+        if current_user.role != 'root_admin':
+            flash('Access denied', 'error')
+            return redirect(url_for('dashboard'))
+    
+        if request.method == 'POST':
+            name = request.form.get('name')
+        
+            if not name:
+                flash('Category name is required', 'error')
+                return redirect(url_for('add_category'))
+        
+            if OrganizationCategory.query.filter_by(name=name).first():
+                flash('Category already exists', 'error')
+                return redirect(url_for('add_category'))
+        
+            new_category = OrganizationCategory(name=name)
+            db.session.add(new_category)
+            db.session.commit()
+        
+            flash('Category added successfully', 'success')
+            return redirect(url_for('manage_categories'))
+    
+        return render_template('admin/add_category.html')
+
+    @app.route('/admin/categories/<int:category_id>/delete', methods=['POST'])
+    @login_required
+    def delete_category(category_id):
+        if current_user.role != 'root_admin':
+            flash('Access denied', 'error')
+            return redirect(url_for('dashboard'))
+    
+        category = OrganizationCategory.query.get_or_404(category_id)
+    
+        # Проверяем, есть ли организации с этой категорией
+        if category.organizations:
+            flash('Cannot delete category that is in use by organizations', 'error')
+            return redirect(url_for('manage_categories'))
+    
+        db.session.delete(category)
+        db.session.commit()
+    
+        flash('Category deleted successfully', 'success')
+        return redirect(url_for('manage_categories'))
+
+    @app.route('/admin/create_organization', methods=['GET', 'POST'])
+    @login_required
+    def create_organization():
+        if current_user.role not in ['root_admin', 'admin']:
+            flash('Access denied', 'error')
+            return redirect(url_for('dashboard'))
+
+        if request.method == 'POST':
+            # Check if we're adding a new category
+            if current_user.role == 'root_admin' and request.form.get('new_category_name'):
+                new_category_name = request.form.get('new_category_name').strip()
+                if new_category_name:
+                    # Check if category already exists
+                    if not OrganizationCategory.query.filter_by(name=new_category_name).first():
+                        new_category = OrganizationCategory(name=new_category_name)
+                        db.session.add(new_category)
+                        db.session.commit()
+                        flash('New category added successfully!', 'success')
+                        category_id = new_category.id
+                    else:
+                        flash('Category already exists', 'error')
+                        return redirect(url_for('create_organization'))
+                else:
+                    flash('Category name cannot be empty', 'error')
+                    return redirect(url_for('create_organization'))
+            else:
+                category_id = request.form.get('category_id')
+
+            name = request.form.get('name')
+            description = request.form.get('description')
+            leader_id = request.form.get('leader_id')
+        
+            new_org = Organization(
+                name=name,
+                description=description,
+                leader_id=leader_id,
+                category_id=category_id
+            )
+        
+            db.session.add(new_org)
+            db.session.commit()
+        
+            flash('Organization created successfully!', 'success')
+            return redirect(url_for('organizations'))
+    
+        users = User.query.all()
+        categories = OrganizationCategory.query.order_by(OrganizationCategory.name).all()
+        return render_template('admin/create_organization.html', 
+                             users=users, 
+                             categories=categories,
+                             is_root_admin=current_user.role == 'root_admin')
+
+    # Обновим маршрут для списка организаций с фильтрацией
+    @app.route('/organizations')
+    def organizations():
+        search_query = request.args.get('search', '').strip()
+        category_id = request.args.get('category', type=int)
+    
+        query = Organization.query
+    
+        if search_query:
+            query = query.filter(Organization.name.ilike(f'%{search_query}%'))
+    
+        if category_id:
+            query = query.filter_by(category_id=category_id)
+    
+        orgs = query.all()
+        categories = OrganizationCategory.query.order_by(OrganizationCategory.name).all()
+    
+        return render_template('organizations.html', 
+                             organizations=orgs,
+                             categories=categories,
+                             selected_category=category_id)
 
 
     #event logic
@@ -743,32 +865,6 @@ def register_routes(app):
 
         return render_template('admin/create_admin.html')
 
-    @app.route('/admin/create_organization', methods=['GET', 'POST'])
-    @login_required
-    def create_organization():
-        if current_user.role not in ['root_admin', 'admin']:
-            flash('Access denied', 'error')
-            return redirect(url_for('dashboard'))
-
-        if request.method == 'POST':
-            name = request.form.get('name')
-            description = request.form.get('description')
-            leader_id = request.form.get('leader_id')
-            
-            new_org = Organization(
-                name=name,
-                description=description,
-                leader_id=leader_id
-            )
-            
-            db.session.add(new_org)
-            db.session.commit()
-            
-            flash('Organization created successfully!', 'success')
-            return redirect(url_for('organizations'))
-            
-        users = User.query.all()
-        return render_template('admin/create_organization.html', users=users)
 
     @app.route('/admin/create_event', methods=['GET', 'POST'])
     @login_required
