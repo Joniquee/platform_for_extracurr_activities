@@ -1,45 +1,92 @@
+﻿/* Цветовая палитра ВШЭ (строго синяя гамма) */
+:root {
+    /* Синий спектр */
+    --hse-blue: #1C3F94;
+    --hse-blue-light: #5D9BF0;
+    --hse-blue-dark: #0D2A5F;
+    --hse-blue-pale: #E6F0FF;
+    /* Нейтральные */
+    --hse-white: #FFFFFF;
+    --hse-gray-1: #F8F9FA;
+    --hse-gray-2: #E0E0E0;
+    --hse-gray-3: #6C757D;
+    --hse-black: #212121;
+    /* Шапка */
+    --header-bg: #000000;
+}
+
+/* 1. Жёсткий сброс всех не-ВШЭ цветов */
+.btn-danger, .bg-danger, .alert-danger, .badge-danger,
+.btn-warning, .bg-warning, .alert-warning, .badge-warning,
+.btn-success, .bg-success, .alert-success, .badge-success {
+    background-color: var(--hse-blue) !important;
+    color: var(--hse-white) !important;
+    border-color: var(--hse-blue-dark) !important;
+}
+
+/* 2. Перехват инлайновых стилей */
+[style*="red"], [style*="#dc3545"],
+[style*="orange"], [style*="#fd7e14"],
+[style*="green"], [style*="#28a745"] {
+    background-color: var(--hse-blue) !important;
+    color: var(--hse-white) !important;
+}
+
+/* 3. Базовая стилизация */
 body {
-    font-family: 'PT Sans', sans-serif;
-    background-color: #fff;
-    color: #333;
+    margin: 0;
+    padding-top: 0; /* Изменено с 56px на 0 */
+    background-color: var(--hse-white);
+    color: var(--hse-black);
+    font-family: 'Roboto', sans-serif;
 }
 
-a {
-    color: #003366;
-    text-decoration: none;
+/* 4. Чёрная шапка */
+.navbar {
+    background-color: var(--header-bg) !important;
+    color: var(--hse-white) !important;
+    padding-top: 0.5rem; /* Добавлено для внутреннего отступа */
+    padding-bottom: 0.5rem; /* Добавлено для внутреннего отступа */
 }
 
-a:hover {
-    color: #002244;
+/* Добавить этот новый стиль */
+.navbar.fixed-top {
+    top: 0;
 }
 
-.btn-primary {
-    background-color: #003366;
-    border-color: #003366;
-}
-
-.btn-primary:hover {
-    background-color: #002244;
-    border-color: #002244;
-}
-
+/* 5. Карточки */
 .card {
-    border: none;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    border: 1px solid var(--hse-gray-2);
+    background: var(--hse-white);
 }
 
-.fc-event {
-    background-color: #003366;
-    border-color: #003366;
-    color: #fff;
+.card-header {
+    background-color: var(--hse-blue-pale) !important;
+    color: var(--hse-blue-dark) !important;
 }
 
-.fc-event:hover {
-    background-color: #002244;
+/* 6. Кнопки */
+.btn-primary {
+    background-color: var(--hse-blue);
+    color: var(--hse-white);
 }
 
-.footer {
-  margin-top: auto; 
+.btn-outline-primary {
+    color: var(--hse-blue);
+    border-color: var(--hse-blue);
 }
 
+/* 7. Текст */
+.text-muted {
+    color: var(--hse-gray-3) !important;
+}
 
+/* 8. Календарь и формы */
+#calendar {
+    border-color: var(--hse-gray-2);
+}
+
+.form-control {
+    background-color: var(--hse-white);
+    color: var(--hse-black);
+}
